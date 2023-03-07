@@ -9,52 +9,60 @@ function customerSuccessBalancing(
   customers,
   customerSuccessAway
 ) {
-  const availableCustomerSuccess = customerSuccess.filter(
-    (cs) => !customerSuccessAway.includes(cs.id)
+  const isInputsValid = validateInputs(
+    customerSuccess,
+    customers,
+    customerSuccessAway
   );
 
-  const availableCsSortedByScore = availableCustomerSuccess.sort(
-    (a, b) => a.score - b.score
-  );
+  if (isInputsValid) {
+    const availableCustomerSuccess = customerSuccess.filter(
+      (cs) => !customerSuccessAway.includes(cs.id)
+    );
 
-  const customersByScore = customers.sort((a, b) => a.score - b.score);
+    const availableCsSortedByScore = availableCustomerSuccess.sort(
+      (a, b) => a.score - b.score
+    );
 
-  const csCustomers = {};
-  for (let cs of availableCsSortedByScore) {
-    csCustomers[cs.id] = [];
-  }
+    const customersByScore = customers.sort((a, b) => a.score - b.score);
 
-  for (let customer of customersByScore) {
-    let assigned = false;
+    const csCustomers = {};
     for (let cs of availableCsSortedByScore) {
-      if (cs.score >= customer.score) {
-        csCustomers[cs.id].push(customer.id);
-        assigned = true;
-        break;
+      csCustomers[cs.id] = [];
+    }
+
+    for (let customer of customersByScore) {
+      let assigned = false;
+      for (let cs of availableCsSortedByScore) {
+        if (cs.score >= customer.score) {
+          csCustomers[cs.id].push(customer.id);
+          assigned = true;
+          break;
+        }
+      }
+      if (!assigned) {
+        // For instance, customers may be left without a CS assigned
+        continue;
       }
     }
-    if (!assigned) {
-      // For instance, customers may be left without a CS assigned
-      continue;
-    }
+
+    const csMaxCustomersCount = Object.entries(csCustomers).reduce(
+      (acc, [key, value]) => {
+        const customersLength = value.length;
+        if (customersLength > acc.max) {
+          return { key, max: customersLength };
+        } else if (customersLength === acc.max) {
+          // If there is a tie, returns 0
+          return { key: 0, max: customersLength };
+        } else {
+          return acc;
+        }
+      },
+      { key: "", max: -Infinity }
+    );
+
+    return parseInt(csMaxCustomersCount.key);
   }
-
-  const csMaxCustomersCount = Object.entries(csCustomers).reduce(
-    (acc, [key, value]) => {
-      const customersLength = value.length;
-      if (customersLength > acc.max) {
-        return { key, max: customersLength };
-      } else if (customersLength === acc.max) {
-        // If there is a tie, returns 0
-        return { key: 0, max: customersLength };
-      } else {
-        return acc;
-      }
-    },
-    { key: "", max: -Infinity }
-  );
-
-  return parseInt(csMaxCustomersCount.key);
 }
 
 test("Scenario 1", () => {
@@ -92,8 +100,81 @@ function mapEntities(arr) {
   }));
 }
 
-function arraySeq(count, startAt){
+function arraySeq(count, startAt) {
   return Array.apply(0, Array(count)).map((it, index) => index + startAt);
+}
+
+function validateInputs(customerSuccess, customers, customerSuccessAway) {
+  const n = customerSuccess.length;
+  const m = customers.length;
+  const t = customerSuccessAway.length;
+  const csScores = customerSuccess.map((cs) => cs.score);
+
+  const maxCsLength = 1000;
+  const maxCustomersLength = 1000000;
+  const maxCsId = 1000;
+  const maxCsScore = 10000;
+  const maxCustomerId = 1000000;
+  const maxCustomerScore = 100000;
+  const maxCsAway = Math.floor(n / 2);
+
+  const inputValidations = [
+    {
+      name: "number of CSs",
+      value: n,
+      max: maxCsLength,
+    },
+    {
+      name: "number of customers",
+      value: m,
+      max: maxCustomersLength,
+    },
+    {
+      name: "number of CSs away",
+      value: t,
+      max: maxCsAway,
+    },
+    {
+      name: "CS IDs",
+      value: customerSuccess.map((cs) => cs.id),
+      max: maxCsId,
+    },
+    {
+      name: "CS scores",
+      value: csScores,
+      max: maxCsScore,
+    },
+    {
+      name: "customer IDs",
+      value: customers.map((c) => c.id),
+      max: maxCustomerId,
+    },
+    {
+      name: "customer scores",
+      value: customers.map((c) => c.score),
+      max: maxCustomerScore,
+    },
+  ];
+
+  if (new Set(csScores).size !== csScores.length) {
+    throw new Error("All CSs should have different levels.");
+  }
+
+  for (const { name, value, max } of inputValidations) {
+    if (name == "number of CSs away") {
+      if (t > maxCsAway) {
+        throw new Error(
+          `Invalid number of CSs away: ${t}. The number of CSs away must be less than ${maxCsAway}.`
+        );
+      }
+    } else if (value <= 0 || value >= max) {
+      throw new Error(
+        `Invalid ${name}: ${value}. The ${name} must be greater than 0 and less than ${max}.`
+      );
+    }
+  }
+
+  return true;
 }
 
 test("Scenario 2", () => {
