@@ -1,5 +1,12 @@
 # Javascript
+
 ## Como rodar os testes
+
+## Versão recomendada do Node:
+
+```
+>= 10.14.2
+```
 
 No terminal, execute os comandos:
 
