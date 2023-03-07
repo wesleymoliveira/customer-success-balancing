@@ -9,11 +9,52 @@ function customerSuccessBalancing(
   customers,
   customerSuccessAway
 ) {
-  /**
-   * ===============================================
-   * =========== Write your solution here ==========
-   * ===============================================
-   */
+  const availableCustomerSuccess = customerSuccess.filter(
+    (cs) => !customerSuccessAway.includes(cs.id)
+  );
+
+  const availableCsSortedByScore = availableCustomerSuccess.sort(
+    (a, b) => a.score - b.score
+  );
+
+  const customersByScore = customers.sort((a, b) => a.score - b.score);
+
+  const csCustomers = {};
+  for (let cs of availableCsSortedByScore) {
+    csCustomers[cs.id] = [];
+  }
+
+  for (let customer of customersByScore) {
+    let assigned = false;
+    for (let cs of availableCsSortedByScore) {
+      if (cs.score >= customer.score) {
+        csCustomers[cs.id].push(customer.id);
+        assigned = true;
+        break;
+      }
+    }
+    if (!assigned) {
+      // For instance, customers may be left without a CS assigned
+      continue;
+    }
+  }
+
+  const csMaxCustomersCount = Object.entries(csCustomers).reduce(
+    (acc, [key, value]) => {
+      const customersLength = value.length;
+      if (customersLength > acc.max) {
+        return { key, max: customersLength };
+      } else if (customersLength === acc.max) {
+        // If there is a tie, returns 0
+        return { key: 0, max: customersLength };
+      } else {
+        return acc;
+      }
+    },
+    { key: "", max: -Infinity }
+  );
+
+  return parseInt(csMaxCustomersCount.key);
 }
 
 test("Scenario 1", () => {
